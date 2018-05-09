@@ -1,13 +1,13 @@
 import keras, os
 from keras.models import Sequential
-from keras.layers import Dense, Conv2D, Activation, Flatten, MaxPool2D
+from keras.layers import Dense, Conv2D, Activation, Flatten, MaxPool2D, Dropout
 from keras.datasets import cifar10
 from keras.utils import to_categorical
 from keras.preprocessing.image import ImageDataGenerator
 
 batch_size = 32
 num_classes = 10
-epochs = 1
+epochs = 5
 data_augmentation = False
 save_dir = os.path.join(os.getcwd(), 'log')
 model_name = 'cifar10_trained_model.h5'
@@ -26,14 +26,26 @@ y_test = to_categorical(y_test, num_classes)
 model = Sequential()
 
 # add some layers
-model.add(Conv2D(32, (3, 3), padding='same', input_shape=x_train.shape[1:]))
+model.add(Conv2D(32, (3, 3), padding='same',
+                 input_shape=x_train.shape[1:]))
 model.add(Activation('relu'))
 model.add(Conv2D(32, (3, 3)))
 model.add(Activation('relu'))
 model.add(MaxPool2D(pool_size=(2, 2)))
+model.add(Dropout(0.25))
+
+model.add(Conv2D(64, (3, 3), padding='same'))
+model.add(Activation('relu'))
+model.add(Conv2D(64, (3, 3)))
+model.add(Activation('relu'))
+model.add(MaxPool2D(pool_size=(2, 2)))
+model.add(Dropout(0.25))
 
 model.add(Flatten())
-model.add(Conv2D(num_classes, (1, 1)))
+model.add(Dense(512))
+model.add(Activation('relu'))
+model.add(Dropout(0.5))
+model.add(Dense(num_classes))
 model.add(Activation('softmax'))
 
 # configure learning process
@@ -78,14 +90,14 @@ else:
                         validation_data=(x_test, y_test),
                         workers=4)
 
-# # Save model and weights
-# if not os.path.isdir(save_dir):
-#     os.makedirs(save_dir)
-# model_path = os.path.join(save_dir, model_name)
-# model.save(model_path)
-# print('Saved trained model at %s ' % model_path)
-#
-# # Score trained model.
-# scores = model.evaluate(x_test, y_test, verbose=1)
-# print('Test loss:', scores[0])
-# print('Test accuracy:', scores[1])
+# Save model and weights
+if not os.path.isdir(save_dir):
+    os.makedirs(save_dir)
+model_path = os.path.join(save_dir, model_name)
+model.save(model_path)
+print('Saved trained model at %s ' % model_path)
+
+# Score trained model.
+scores = model.evaluate(x_test, y_test, verbose=1)
+print('Test loss:', scores[0])
+print('Test accuracy:', scores[1])
