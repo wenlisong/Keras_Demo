@@ -1,13 +1,13 @@
-import keras,os
+import keras, os
 from keras.models import Sequential
-from keras.layers import Dense, Conv2D, Activation, Flatten
+from keras.layers import Dense, Conv2D, Activation, Flatten, MaxPool2D
 from keras.datasets import cifar10
 from keras.utils import to_categorical
 from keras.preprocessing.image import ImageDataGenerator
 
 batch_size = 32
 num_classes = 10
-epochs = 5
+epochs = 1
 data_augmentation = False
 save_dir = os.path.join(os.getcwd(), 'log')
 model_name = 'cifar10_trained_model.h5'
@@ -26,16 +26,24 @@ y_test = to_categorical(y_test, num_classes)
 model = Sequential()
 
 # add some layers
-model.add(Dense(16,input_shape=x_train.shape[1:]))
-model.add(Dense(10))
-# model.add(Flatten())
-model.add(Dense(num_classes))
+model.add(Conv2D(32, (3, 3), padding='same', input_shape=x_train.shape[1:]))
+model.add(Activation('relu'))
+model.add(Conv2D(32, (3, 3)))
+model.add(Activation('relu'))
+model.add(MaxPool2D(pool_size=(2, 2)))
+
+model.add(Flatten())
+model.add(Conv2D(num_classes, (1, 1)))
 model.add(Activation('softmax'))
 
 # configure learning process
-opt = keras.optimizers.sgd(lr=0.01, momentum=0.9, decay=0.5)
+opt = keras.optimizers.adam()
 model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
 
+x_train = x_train.astype('float32')
+x_test = x_test.astype('float32')
+x_train /= 255
+x_test /= 255
 
 if not data_augmentation:
     print('Not using data augmentation.')
@@ -70,14 +78,14 @@ else:
                         validation_data=(x_test, y_test),
                         workers=4)
 
-# Save model and weights
-if not os.path.isdir(save_dir):
-    os.makedirs(save_dir)
-model_path = os.path.join(save_dir, model_name)
-model.save(model_path)
-print('Saved trained model at %s ' % model_path)
-
-# Score trained model.
-scores = model.evaluate(x_test, y_test, verbose=1)
-print('Test loss:', scores[0])
-print('Test accuracy:', scores[1])
+# # Save model and weights
+# if not os.path.isdir(save_dir):
+#     os.makedirs(save_dir)
+# model_path = os.path.join(save_dir, model_name)
+# model.save(model_path)
+# print('Saved trained model at %s ' % model_path)
+#
+# # Score trained model.
+# scores = model.evaluate(x_test, y_test, verbose=1)
+# print('Test loss:', scores[0])
+# print('Test accuracy:', scores[1])
